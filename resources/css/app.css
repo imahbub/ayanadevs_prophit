@@ -1,0 +1,10 @@
+/* Simple CSS without Tailwind for testing */
+body {
+    font-family: system-ui, -apple-system, sans-serif;
+    margin: 0;
+    padding: 20px;
+    background: #f9fafb;
+}
+
+.success { color: green; font-weight: bold; }
+.error { color: red; font-weight: bold; }
