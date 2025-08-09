@@ -35,8 +35,10 @@ class PolymarketService
                 'POLY-API-KEY' => $this->apiKey,
                 'Content-Type' => 'application/json',
             ])->get($this->baseUrl . '/markets', [
-                'limit' => 100,
-                'active' => 'true'
+                'limit' => 1000,
+                'active' => 'true',
+                'next_cursor' => '', // Get latest markets
+                'order' => 'volume_24hr' // Order by recent trading activity
             ]);
 
             if ($response->successful()) {
@@ -118,10 +120,31 @@ class PolymarketService
                 return null;
             }
 
-            // Skip completely inactive or archived markets, but allow closed markets for MVP demo
-            if (!($marketData['active'] ?? false) || 
-                ($marketData['archived'] ?? false)) {
+            $active = $marketData['active'] ?? false;
+            $archived = $marketData['archived'] ?? false;
+            $closed = $marketData['closed'] ?? false;
+            
+            // Priority filtering: prefer markets with trading activity
+            $acceptingOrders = $marketData['accepting_orders'] ?? false;
+            $hasVolume = ($marketData['volume'] ?? 0) > 0;
+            
+            // Skip completely inactive or archived markets
+            if (!$active || $archived) {
+                Log::info('Skipping inactive/archived market', [
+                    'question' => substr($marketData['question'] ?? 'Unknown', 0, 50),
+                    'active' => $active,
+                    'archived' => $archived
+                ]);
                 return null;
+            }
+            
+            // For markets that are closed but still have activity, log for future optimization
+            if ($closed) {
+                Log::info('Processing closed market with activity', [
+                    'question' => substr($marketData['question'] ?? 'Unknown', 0, 50),
+                    'accepting_orders' => $acceptingOrders,
+                    'has_volume' => $hasVolume
+                ]);
             }
 
             // Parse the market question
@@ -169,10 +192,13 @@ class PolymarketService
                     'volume' => $volume,
                     'category' => $category,
                     'end_date' => $endDate,
-                    'active' => true,
+                    'active' => $marketData['active'] ?? false,
                     'metadata' => $marketData,
                 ]
             );
+            
+            // Always update the timestamp to reflect sync time
+            $market->touch();
 
             // Record price history
             MarketPriceHistory::create([
@@ -240,7 +266,7 @@ class PolymarketService
     /**
      * Detect significant market movements
      */
-    public function detectSignificantMovements(Market $market, float $threshold = 10.0): void
+    public function detectSignificantMovements(Market $market, float $threshold = 1.0): void
     {
         // Get price history from last 24 hours
         $recentHistory = $market->priceHistory()

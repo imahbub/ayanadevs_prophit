@@ -36,17 +36,31 @@ export default function Layout({ title, children, lastSync }) {
                 <header className="bg-white shadow border-b">
                     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
                         <div className="flex justify-between items-center py-6">
-                            <div className="flex items-center space-x-4">
-                                <Link 
-                                    href="/" 
-                                    className="text-2xl font-bold text-gray-900 hover:text-blue-600 transition-colors"
-                                >
-                                    Prophit
-                                </Link>
-                                <span className="text-sm text-gray-500 bg-gray-100 px-2 py-1 rounded">
-                                    MVP
-                                </span>
-                            </div>
+                                                <div className="flex items-center space-x-6">
+                        <Link
+                            href="/"
+                            className="text-2xl font-bold text-gray-900 hover:text-blue-600 transition-colors"
+                        >
+                            Prophit
+                        </Link>
+                        <span className="text-sm text-gray-500 bg-gray-100 px-2 py-1 rounded">
+                            MVP
+                        </span>
+                        <nav className="flex space-x-4">
+                            <Link
+                                href="/"
+                                className="text-sm font-medium text-gray-700 hover:text-blue-600 transition-colors"
+                            >
+                                Live Feed
+                            </Link>
+                            <Link
+                                href="/historic"
+                                className="text-sm font-medium text-gray-700 hover:text-blue-600 transition-colors"
+                            >
+                                Historic Data
+                            </Link>
+                        </nav>
+                    </div>
                             <div className="flex items-center space-x-4">
                                 <div className="text-sm text-gray-600">
                                     Data synced: {formatLastSync(lastSync)}

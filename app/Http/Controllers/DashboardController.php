@@ -15,7 +15,7 @@ class DashboardController extends Controller
      */
     public function index(Request $request): Response
     {
-        $threshold = $request->get('threshold', 10);
+        $threshold = $request->get('threshold', 1);
         
         // Get recent significant movements
         $movements = MarketMovement::with('market')
@@ -68,6 +68,44 @@ class DashboardController extends Controller
             'market' => $market,
             'priceHistory' => $priceHistory,
             'hours' => $hours,
+        ]);
+    }
+
+    /**
+     * Show historic movements page
+     */
+    public function historic(Request $request): Response
+    {
+        $timeframe = $request->get('timeframe', '30'); // Default to 30 days
+        $minThreshold = $request->get('min_threshold', 1);
+        
+        // Get all movements within timeframe
+        $movements = MarketMovement::with('market')
+            ->where('movement_detected_at', '>=', now()->subDays($timeframe))
+            ->where('change_percentage', '>=', $minThreshold)
+            ->orderBy('movement_detected_at', 'desc')
+            ->paginate(50);
+
+        // Get movement statistics
+        $stats = [
+            'total_movements' => MarketMovement::where('movement_detected_at', '>=', now()->subDays($timeframe))->count(),
+            'largest_movement' => MarketMovement::where('movement_detected_at', '>=', now()->subDays($timeframe))
+                ->orderBy('change_percentage', 'desc')
+                ->first(),
+            'most_volatile_market' => Market::withCount(['movements' => function ($query) use ($timeframe) {
+                $query->where('movement_detected_at', '>=', now()->subDays($timeframe));
+            }])
+            ->orderBy('movements_count', 'desc')
+            ->first(),
+            'average_movement_size' => MarketMovement::where('movement_detected_at', '>=', now()->subDays($timeframe))
+                ->avg('change_percentage'),
+        ];
+
+        return Inertia::render('HistoricMovements', [
+            'movements' => $movements,
+            'stats' => $stats,
+            'timeframe' => $timeframe,
+            'minThreshold' => $minThreshold,
         ]);
     }
 }
