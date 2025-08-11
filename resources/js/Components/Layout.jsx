@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react'
-import { Head, Link } from '@inertiajs/react'
+import { Head, Link, usePage } from '@inertiajs/react'
 
 export default function Layout({ title, children, lastSync }) {
     const [currentTime, setCurrentTime] = useState(new Date())
+    const { url } = usePage()
 
     useEffect(() => {
         const timer = setInterval(() => {
@@ -28,6 +29,12 @@ export default function Layout({ title, children, lastSync }) {
         return syncDate.toLocaleDateString()
     }
 
+    const isActive = (path) => {
+        if (path === '/' && url === '/') return true
+        if (path !== '/' && url.startsWith(path)) return true
+        return false
+    }
+
     return (
         <>
             <Head title={title} />
@@ -49,13 +56,21 @@ export default function Layout({ title, children, lastSync }) {
                         <nav className="flex space-x-4">
                             <Link
                                 href="/"
-                                className="text-sm font-medium text-gray-700 hover:text-blue-600 transition-colors"
+                                className={`text-sm font-medium transition-colors ${
+                                    isActive('/') 
+                                        ? 'text-blue-600 border-b-2 border-blue-600 pb-1' 
+                                        : 'text-gray-700 hover:text-blue-600'
+                                }`}
                             >
                                 Live Feed
                             </Link>
                             <Link
                                 href="/historic"
-                                className="text-sm font-medium text-gray-700 hover:text-blue-600 transition-colors"
+                                className={`text-sm font-medium transition-colors ${
+                                    isActive('/historic') 
+                                        ? 'text-blue-600 border-b-2 border-blue-600 pb-1' 
+                                        : 'text-gray-700 hover:text-blue-600'
+                                }`}
                             >
                                 Historic Data
                             </Link>

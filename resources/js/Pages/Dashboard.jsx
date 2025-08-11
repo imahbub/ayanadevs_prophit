@@ -7,6 +7,7 @@ import StatsGrid from '../Components/StatsGrid'
 export default function Dashboard({ movements, stats, threshold }) {
     const [currentThreshold, setCurrentThreshold] = useState(threshold)
     const [autoRefresh, setAutoRefresh] = useState(true)
+    const [isRefreshing, setIsRefreshing] = useState(false)
 
     // Auto-refresh every 30 seconds
     useEffect(() => {
@@ -26,6 +27,39 @@ export default function Dashboard({ movements, stats, threshold }) {
             preserveScroll: true,
             only: ['movements', 'stats']
         })
+    }
+
+    const handleRefresh = async () => {
+        if (isRefreshing) return
+        
+        setIsRefreshing(true)
+        try {
+            // Trigger sync via API
+            const response = await fetch('/api/sync', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content')
+                }
+            })
+            
+            const result = await response.json()
+            
+            if (result.success) {
+                // After successful sync, reload the page data
+                router.reload({ only: ['movements', 'stats'] })
+            } else {
+                console.error('Sync failed:', result.message)
+                // Still reload to show current data
+                router.reload({ only: ['movements', 'stats'] })
+            }
+        } catch (error) {
+            console.error('Error triggering sync:', error)
+            // Fallback to just reloading current data
+            router.reload({ only: ['movements', 'stats'] })
+        } finally {
+            setIsRefreshing(false)
+        }
     }
 
     const thresholdOptions = [5, 10, 15, 20, 25]
@@ -96,10 +130,15 @@ export default function Dashboard({ movements, stats, threshold }) {
                             Recent Movements ({currentThreshold}%+ in 24h)
                         </h2>
                         <button
-                            onClick={() => router.reload({ only: ['movements', 'stats'] })}
-                            className="text-blue-600 hover:text-blue-700 text-sm font-medium"
+                            onClick={handleRefresh}
+                            disabled={isRefreshing}
+                            className={`text-sm font-medium ${
+                                isRefreshing 
+                                    ? 'text-gray-400 cursor-not-allowed' 
+                                    : 'text-blue-600 hover:text-blue-700'
+                            }`}
                         >
-                            Refresh
+                            {isRefreshing ? 'Syncing...' : 'Refresh'}
                         </button>
                     </div>
 

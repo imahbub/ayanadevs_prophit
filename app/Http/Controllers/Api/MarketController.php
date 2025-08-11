@@ -112,4 +112,33 @@ class MarketController extends Controller
 
         return response()->json($markets);
     }
+
+    /**
+     * Trigger manual sync of Polymarket data
+     */
+    public function triggerSync(Request $request)
+    {
+        try {
+            // Run the sync command
+            $exitCode = \Artisan::call('polymarket:sync');
+            
+            if ($exitCode === 0) {
+                return response()->json([
+                    'success' => true,
+                    'message' => 'Sync completed successfully',
+                    'timestamp' => now()->toISOString()
+                ]);
+            } else {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Sync failed with exit code: ' . $exitCode
+                ], 500);
+            }
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Sync failed: ' . $e->getMessage()
+            ], 500);
+        }
+    }
 }
