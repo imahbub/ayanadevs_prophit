@@ -16,6 +16,7 @@ class TestPolymarketApi extends Command
 
         $apiKey = config('services.polymarket.api_key');
         $baseUrl = 'https://clob.polymarket.com';
+        $gammaBaseUrl = 'https://gamma-api.polymarket.com';
 
         // Test different endpoints and parameters to find active markets
         $endpoints = [
@@ -61,6 +62,27 @@ class TestPolymarketApi extends Command
             'https://api.polymarket.com/markets',
             'https://clob.polymarket.com/v1/markets',
             'https://clob.polymarket.com/api/markets',
+            
+            // Test Gamma API endpoints
+            $gammaBaseUrl . '/markets',
+            $gammaBaseUrl . '/markets?limit=10',
+            $gammaBaseUrl . '/markets?active=true',
+            $gammaBaseUrl . '/markets?active=true&limit=10',
+            $gammaBaseUrl . '/markets?closed=false',
+            $gammaBaseUrl . '/markets?closed=false&limit=10',
+            $gammaBaseUrl . '/markets?accepting_orders=true',
+            $gammaBaseUrl . '/markets?accepting_orders=true&limit=10',
+            $gammaBaseUrl . '/active-markets',
+            $gammaBaseUrl . '/trading-markets',
+            $gammaBaseUrl . '/live-markets',
+            $gammaBaseUrl . '/markets/live',
+            $gammaBaseUrl . '/markets/active',
+            $gammaBaseUrl . '/markets/trading',
+            $gammaBaseUrl . '/v1/markets',
+            $gammaBaseUrl . '/api/markets',
+            $gammaBaseUrl . '/events',
+            $gammaBaseUrl . '/conditions',
+            $gammaBaseUrl . '/questions',
         ];
 
         foreach ($endpoints as $endpoint) {
@@ -112,6 +134,9 @@ class TestPolymarketApi extends Command
             'https://clob.polymarket.com/markets?limit=5',
             'https://polymarket.com/api/markets?limit=5',
             'https://api.polymarket.com/markets?limit=5',
+            'https://gamma-api.polymarket.com/markets?limit=5',
+            'https://gamma-api.polymarket.com/active-markets?limit=5',
+            'https://gamma-api.polymarket.com/trading-markets?limit=5',
         ];
 
         foreach ($publicEndpoints as $endpoint) {

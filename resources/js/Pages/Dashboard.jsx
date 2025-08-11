@@ -3,11 +3,16 @@ import { router } from '@inertiajs/react'
 import Layout from '../Components/Layout'
 import MovementCard from '../Components/MovementCard'
 import StatsGrid from '../Components/StatsGrid'
+import MovementsChart from '../Components/MovementsChart'
+import MarketChangesGrid from '../Components/MarketChangesGrid'
+import LiveMarketChanges from '../Components/LiveMarketChanges'
+import MarketChangesSummary from '../Components/MarketChangesSummary'
 
 export default function Dashboard({ movements, stats, threshold }) {
     const [currentThreshold, setCurrentThreshold] = useState(threshold)
     const [autoRefresh, setAutoRefresh] = useState(true)
     const [isRefreshing, setIsRefreshing] = useState(false)
+    const [viewMode, setViewMode] = useState('list') // 'list', 'grid', 'chart'
 
     // Auto-refresh every 30 seconds
     useEffect(() => {
@@ -123,23 +128,59 @@ export default function Dashboard({ movements, stats, threshold }) {
                 {/* Stats Grid */}
                 <StatsGrid stats={stats} />
 
-                {/* Movements Feed */}
+                {/* Recent Movements - Now at the top */}
                 <div className="space-y-6">
                     <div className="flex items-center justify-between">
                         <h2 className="text-xl font-semibold text-gray-900">
                             Recent Movements ({currentThreshold}%+ in 24h)
                         </h2>
-                        <button
-                            onClick={handleRefresh}
-                            disabled={isRefreshing}
-                            className={`text-sm font-medium ${
-                                isRefreshing 
-                                    ? 'text-gray-400 cursor-not-allowed' 
-                                    : 'text-blue-600 hover:text-blue-700'
-                            }`}
-                        >
-                            {isRefreshing ? 'Syncing...' : 'Refresh'}
-                        </button>
+                        <div className="flex items-center space-x-4">
+                            {/* View Mode Toggle */}
+                            <div className="flex items-center space-x-2">
+                                <button
+                                    onClick={() => setViewMode('list')}
+                                    className={`px-3 py-1 text-sm font-medium rounded-md transition-colors ${
+                                        viewMode === 'list'
+                                            ? 'bg-blue-600 text-white'
+                                            : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+                                    }`}
+                                >
+                                    List
+                                </button>
+                                <button
+                                    onClick={() => setViewMode('grid')}
+                                    className={`px-3 py-1 text-sm font-medium rounded-md transition-colors ${
+                                        viewMode === 'grid'
+                                            ? 'bg-blue-600 text-white'
+                                            : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+                                    }`}
+                                >
+                                    Grid
+                                </button>
+                                <button
+                                    onClick={() => setViewMode('chart')}
+                                    className={`px-3 py-1 text-sm font-medium rounded-md transition-colors ${
+                                        viewMode === 'chart'
+                                            ? 'bg-blue-600 text-white'
+                                            : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+                                    }`}
+                                >
+                                    Chart
+                                </button>
+                            </div>
+                            
+                            <button
+                                onClick={handleRefresh}
+                                disabled={isRefreshing}
+                                className={`text-sm font-medium ${
+                                    isRefreshing 
+                                        ? 'text-gray-400 cursor-not-allowed' 
+                                        : 'text-blue-600 hover:text-blue-700'
+                                }`}
+                            >
+                                {isRefreshing ? 'Syncing...' : 'Refresh'}
+                            </button>
+                        </div>
                     </div>
 
                     {movements.length === 0 ? (
@@ -158,12 +199,53 @@ export default function Dashboard({ movements, stats, threshold }) {
                             </p>
                         </div>
                     ) : (
-                        <div className="space-y-4">
-                            {movements.map((movement) => (
-                                <MovementCard key={movement.id} movement={movement} />
-                            ))}
-                        </div>
+                        <>
+                            {viewMode === 'list' && (
+                                <div className="space-y-4">
+                                    {movements.map((movement) => (
+                                        <MovementCard key={movement.id} movement={movement} />
+                                    ))}
+                                </div>
+                            )}
+                            
+                            {viewMode === 'grid' && (
+                                <MarketChangesGrid movements={movements} />
+                            )}
+                            
+                            {viewMode === 'chart' && (
+                                <div className="bg-white rounded-lg shadow border p-6">
+                                    <div className="h-96 w-full">
+                                        <MovementsChart movements={movements} />
+                                    </div>
+                                </div>
+                            )}
+                        </>
                     )}
+                </div>
+
+                {/* Movements Overview Chart */}
+                {movements.length > 0 && (
+                    <div className="space-y-4">
+                        <h2 className="text-xl font-semibold text-gray-900">
+                            Movements Overview
+                        </h2>
+                        <MovementsChart movements={movements} />
+                    </div>
+                )}
+
+                {/* Top Movements Summary */}
+                <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                    <div className="lg:col-span-2">
+                        <MarketChangesSummary movements={movements} />
+                    </div>
+                </div>
+
+                {/* Live Market Activity */}
+                <div className="space-y-4">
+                    <h2 className="text-xl font-semibold text-gray-900">
+                        Live Market Activity
+                    </h2>
+                    <LiveMarketChanges markets={stats.recent_markets || []} />
                 </div>
 
                 {/* Info Section */}

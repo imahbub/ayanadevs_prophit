@@ -12,6 +12,7 @@ use Carbon\Carbon;
 class PolymarketService
 {
     private string $baseUrl = 'https://clob.polymarket.com';
+    private string $gammaBaseUrl = 'https://gamma-api.polymarket.com';
     private string $apiKey;
     private string $secret;
     private string $passphrase;
@@ -31,6 +32,26 @@ class PolymarketService
     public function fetchActiveMarkets(): array
     {
         try {
+            // Try gamma-api first for active markets
+            $response = Http::timeout(30)->get($this->gammaBaseUrl . '/markets', [
+                'closed' => 'false',
+                'limit' => 100
+            ]);
+
+            if ($response->successful()) {
+                $data = $response->json();
+                
+                if (is_array($data) && !empty($data)) {
+                    Log::info('Successfully fetched active markets from gamma-api', [
+                        'count' => count($data)
+                    ]);
+                    return $data;
+                }
+            }
+
+            Log::warning('Gamma API failed, falling back to CLOB API');
+
+            // Fallback to CLOB API
             $response = Http::timeout(30)->withHeaders([
                 'POLY-API-KEY' => $this->apiKey,
                 'Content-Type' => 'application/json',
@@ -109,8 +130,8 @@ class PolymarketService
     public function updateMarketFromData(array $marketData): ?Market
     {
         try {
-            // Extract market ID - Polymarket uses condition_id
-            $marketId = $marketData['condition_id'] ?? null;
+            // Extract market ID - handle both gamma-api and CLOB formats
+            $marketId = $marketData['conditionId'] ?? $marketData['condition_id'] ?? null;
             
             if (!$marketId || empty($marketId)) {
                 Log::info('Skipping market without condition_id', [
@@ -161,8 +182,8 @@ class PolymarketService
                 return null;
             }
 
-            // Extract volume if available (not always present in the API)
-            $volume = $marketData['volume'] ?? null;
+            // Extract volume - handle both gamma-api and CLOB formats
+            $volume = $marketData['volume24hrClob'] ?? $marketData['volume'] ?? null;
             
             // Extract category from tags
             $category = null;
@@ -171,14 +192,15 @@ class PolymarketService
                 $category = !empty($tags) ? $tags[0] : null;
             }
             
-            // Extract end date
+            // Extract end date - handle both gamma-api and CLOB formats
             $endDate = null;
-            if (isset($marketData['end_date_iso'])) {
+            $endDateField = $marketData['endDate'] ?? $marketData['end_date_iso'] ?? null;
+            if ($endDateField) {
                 try {
-                    $endDate = Carbon::parse($marketData['end_date_iso']);
+                    $endDate = Carbon::parse($endDateField);
                 } catch (\Exception $e) {
-                    Log::warning('Could not parse end_date_iso', [
-                        'end_date_iso' => $marketData['end_date_iso'],
+                    Log::warning('Could not parse end date', [
+                        'end_date_field' => $endDateField,
                         'error' => $e->getMessage()
                     ]);
                 }
@@ -225,7 +247,13 @@ class PolymarketService
      */
     private function extractProbability(array $marketData): ?float
     {
-        // Extract from tokens array - Polymarket format
+        // Gamma API format - use lastTradePrice
+        if (isset($marketData['lastTradePrice'])) {
+            $price = (float) $marketData['lastTradePrice'];
+            return max(0, min(1, $price));
+        }
+
+        // Extract from tokens array - Polymarket CLOB format
         if (isset($marketData['tokens']) && is_array($marketData['tokens'])) {
             // Find the "Yes" token or first token if binary market
             foreach ($marketData['tokens'] as $token) {

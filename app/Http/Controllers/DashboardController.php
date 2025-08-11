@@ -31,6 +31,23 @@ class DashboardController extends Controller
             'significant_movements_today' => MarketMovement::recent(24)->significant($threshold)->count(),
             'active_markets' => Market::active()->count(),
             'last_sync' => Market::latest('updated_at')->first()?->updated_at,
+            'recent_markets' => Market::where('active', true)
+                ->where('current_probability', '>', 0.01)
+                ->where('current_probability', '<', 0.99)
+                ->orderBy('updated_at', 'desc')
+                ->limit(10)
+                ->get()
+                ->map(function($market) {
+                    return [
+                        'id' => $market->id,
+                        'question' => $market->question,
+                        'current_probability' => $market->current_probability,
+                        'volume' => $market->volume,
+                        'category' => $market->category,
+                        'updated_at' => $market->updated_at->toISOString(),
+                    ];
+                })
+                ->toArray(),
         ];
 
         return Inertia::render('Dashboard', [
