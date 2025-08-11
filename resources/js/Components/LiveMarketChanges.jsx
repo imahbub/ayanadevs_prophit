@@ -1,9 +1,10 @@
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useMemo } from 'react'
 import { Link } from '@inertiajs/react'
 
 export default function LiveMarketChanges({ markets }) {
     const [activeMarkets, setActiveMarkets] = useState([])
     const [isLoading, setIsLoading] = useState(true)
+    const [searchTerm, setSearchTerm] = useState('')
 
     useEffect(() => {
         // Filter for markets with recent activity
@@ -15,6 +16,19 @@ export default function LiveMarketChanges({ markets }) {
         setActiveMarkets(recentMarkets)
         setIsLoading(false)
     }, [markets])
+
+    // Filter markets based on search term
+    const filteredMarkets = useMemo(() => {
+        if (!searchTerm.trim()) {
+            return activeMarkets
+        }
+        
+        const searchLower = searchTerm.toLowerCase()
+        return activeMarkets.filter(market => 
+            market.question.toLowerCase().includes(searchLower) ||
+            (market.category && market.category.toLowerCase().includes(searchLower))
+        )
+    }, [activeMarkets, searchTerm])
 
     const formatTime = (dateString) => {
         const date = new Date(dateString)
@@ -38,6 +52,10 @@ export default function LiveMarketChanges({ markets }) {
         if (probability < 0.6) return 'text-yellow-600'
         if (probability < 0.8) return 'text-blue-600'
         return 'text-green-600'
+    }
+
+    const clearSearch = () => {
+        setSearchTerm('')
     }
 
     if (isLoading) {
@@ -67,6 +85,39 @@ export default function LiveMarketChanges({ markets }) {
                 </div>
             </div>
 
+            {/* Search Bar */}
+            <div className="mb-4">
+                <div className="relative">
+                    <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                        <svg className="h-5 w-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                        </svg>
+                    </div>
+                    <input
+                        type="text"
+                        placeholder="Search markets..."
+                        value={searchTerm}
+                        onChange={(e) => setSearchTerm(e.target.value)}
+                        className="block w-full pl-10 pr-10 py-2 border border-gray-300 rounded-md leading-5 bg-white placeholder-gray-500 focus:outline-none focus:placeholder-gray-400 focus:ring-1 focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+                    />
+                    {searchTerm && (
+                        <button
+                            onClick={clearSearch}
+                            className="absolute inset-y-0 right-0 pr-3 flex items-center"
+                        >
+                            <svg className="h-5 w-5 text-gray-400 hover:text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                            </svg>
+                        </button>
+                    )}
+                </div>
+                {searchTerm && (
+                    <div className="mt-2 text-sm text-gray-600">
+                        Showing {filteredMarkets.length} of {activeMarkets.length} markets
+                    </div>
+                )}
+            </div>
+
             {activeMarkets.length === 0 ? (
                 <div className="text-center py-8 text-gray-500">
                     <svg className="w-12 h-12 mx-auto mb-4 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -74,9 +125,17 @@ export default function LiveMarketChanges({ markets }) {
                     </svg>
                     <p>No active markets found</p>
                 </div>
+            ) : filteredMarkets.length === 0 ? (
+                <div className="text-center py-8 text-gray-500">
+                    <svg className="w-12 h-12 mx-auto mb-4 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                    </svg>
+                    <p>No markets match your search</p>
+                    <p className="text-sm mt-1">Try different keywords</p>
+                </div>
             ) : (
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                    {activeMarkets.map((market) => (
+                    {filteredMarkets.map((market) => (
                         <div
                             key={market.id}
                             className="p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors border border-gray-200"

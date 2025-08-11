@@ -13,6 +13,7 @@ export default function Dashboard({ movements, stats, threshold }) {
     const [autoRefresh, setAutoRefresh] = useState(true)
     const [isRefreshing, setIsRefreshing] = useState(false)
     const [viewMode, setViewMode] = useState('list') // 'list', 'grid', 'chart'
+    const [searchTerm, setSearchTerm] = useState('')
 
     // Auto-refresh every 30 seconds
     useEffect(() => {
@@ -68,6 +69,14 @@ export default function Dashboard({ movements, stats, threshold }) {
     }
 
     const thresholdOptions = [5, 10, 15, 20, 25]
+
+    // Filter movements based on search term
+    const filteredMovements = searchTerm.trim() 
+        ? movements.filter(movement => 
+            movement.market.question.toLowerCase().includes(searchTerm.toLowerCase()) ||
+            (movement.market.category && movement.market.category.toLowerCase().includes(searchTerm.toLowerCase()))
+          )
+        : movements
 
     return (
         <Layout title="Market Movements" lastSync={stats.last_sync}>
@@ -130,11 +139,37 @@ export default function Dashboard({ movements, stats, threshold }) {
 
                 {/* Recent Movements - Now at the top */}
                 <div className="space-y-6">
-                    <div className="flex items-center justify-between">
+                    <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between space-y-4 lg:space-y-0">
                         <h2 className="text-xl font-semibold text-gray-900">
                             Recent Movements ({currentThreshold}%+ in 24h)
                         </h2>
-                        <div className="flex items-center space-x-4">
+                        <div className="flex flex-col sm:flex-row items-start sm:items-center space-y-4 sm:space-y-0 sm:space-x-4">
+                            {/* Search Bar */}
+                            <div className="relative w-full sm:w-64">
+                                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                                    <svg className="h-5 w-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                                    </svg>
+                                </div>
+                                <input
+                                    type="text"
+                                    placeholder="Search movements..."
+                                    value={searchTerm}
+                                    onChange={(e) => setSearchTerm(e.target.value)}
+                                    className="block w-full pl-10 pr-10 py-2 border border-gray-300 rounded-md leading-5 bg-white placeholder-gray-500 focus:outline-none focus:placeholder-gray-400 focus:ring-1 focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+                                />
+                                {searchTerm && (
+                                    <button
+                                        onClick={() => setSearchTerm('')}
+                                        className="absolute inset-y-0 right-0 pr-3 flex items-center"
+                                    >
+                                        <svg className="h-5 w-5 text-gray-400 hover:text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                                        </svg>
+                                    </button>
+                                )}
+                            </div>
+
                             {/* View Mode Toggle */}
                             <div className="flex items-center space-x-2">
                                 <button
@@ -183,6 +218,13 @@ export default function Dashboard({ movements, stats, threshold }) {
                         </div>
                     </div>
 
+                    {/* Search Results Info */}
+                    {searchTerm && (
+                        <div className="text-sm text-gray-600 bg-blue-50 border border-blue-200 rounded-md p-3">
+                            Showing {filteredMovements.length} of {movements.length} movements matching "{searchTerm}"
+                        </div>
+                    )}
+
                     {movements.length === 0 ? (
                         <div className="bg-white rounded-lg shadow border p-12 text-center">
                             <div className="text-gray-400 mb-4">
@@ -202,20 +244,20 @@ export default function Dashboard({ movements, stats, threshold }) {
                         <>
                             {viewMode === 'list' && (
                                 <div className="space-y-4">
-                                    {movements.map((movement) => (
+                                    {filteredMovements.map((movement) => (
                                         <MovementCard key={movement.id} movement={movement} />
                                     ))}
                                 </div>
                             )}
                             
                             {viewMode === 'grid' && (
-                                <MarketChangesGrid movements={movements} />
+                                <MarketChangesGrid movements={filteredMovements} />
                             )}
                             
                             {viewMode === 'chart' && (
                                 <div className="bg-white rounded-lg shadow border p-6">
                                     <div className="h-96 w-full">
-                                        <MovementsChart movements={movements} />
+                                        <MovementsChart movements={filteredMovements} />
                                     </div>
                                 </div>
                             )}
@@ -224,19 +266,19 @@ export default function Dashboard({ movements, stats, threshold }) {
                 </div>
 
                 {/* Movements Overview Chart */}
-                {movements.length > 0 && (
+                {filteredMovements.length > 0 && (
                     <div className="space-y-4">
                         <h2 className="text-xl font-semibold text-gray-900">
                             Movements Overview
                         </h2>
-                        <MovementsChart movements={movements} />
+                        <MovementsChart movements={filteredMovements} />
                     </div>
                 )}
 
                 {/* Top Movements Summary */}
                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                     <div className="lg:col-span-2">
-                        <MarketChangesSummary movements={movements} />
+                        <MarketChangesSummary movements={filteredMovements} />
                     </div>
                 </div>
 
