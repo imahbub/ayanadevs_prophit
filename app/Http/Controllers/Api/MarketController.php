@@ -75,7 +75,10 @@ class MarketController extends Controller
             $priceHistory = $query->get();
         }
 
-        return response()->json($priceHistory);
+        return response()->json([
+            'success' => true,
+            'price_history' => $priceHistory
+        ]);
     }
 
     /**

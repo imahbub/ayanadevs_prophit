@@ -63,14 +63,28 @@ export default function MovementCard({ movement }) {
         
         setIsLoadingChart(true)
         try {
-            const response = await fetch(`/api/markets/${movement.market.id}/price-history`)
+            const response = await fetch(`/api/markets/${movement.market.id}/price-history`, {
+                headers: {
+                    'Accept': 'application/json',
+                    'Content-Type': 'application/json',
+                }
+            })
+            
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`)
+            }
+            
             const data = await response.json()
             
-            if (data.success && data.price_history) {
-                setPriceHistory(data.price_history.map(point => ({
+            if (data.success && data.price_history && data.price_history.length > 0) {
+                const chartData = data.price_history.map(point => ({
                     x: new Date(point.recorded_at),
                     y: parseFloat(point.probability)
-                })))
+                }))
+                console.log('Price history data loaded:', chartData.length, 'points for market', movement.market.id)
+                setPriceHistory(chartData)
+            } else {
+                console.log('No price history data available for market', movement.market.id, ':', data)
             }
         } catch (error) {
             console.error('Error fetching price history:', error)
@@ -96,9 +110,25 @@ export default function MovementCard({ movement }) {
             tooltip: {
                 mode: 'index',
                 intersect: false,
+                backgroundColor: 'rgba(0, 0, 0, 0.8)',
+                titleColor: 'white',
+                bodyColor: 'white',
+                borderColor: 'rgba(255, 255, 255, 0.2)',
+                borderWidth: 1,
+                cornerRadius: 8,
+                padding: 12,
                 callbacks: {
+                    title: function(context) {
+                        const date = new Date(context[0].parsed.x)
+                        return date.toLocaleString('en-US', {
+                            month: 'short',
+                            day: 'numeric',
+                            hour: '2-digit',
+                            minute: '2-digit'
+                        })
+                    },
                     label: function(context) {
-                        return `Probability: ${(context.parsed.y * 100).toFixed(2)}%`
+                        return `Probability: ${(context.parsed.y * 100).toFixed(1)}%`
                     }
                 }
             },
@@ -110,14 +140,48 @@ export default function MovementCard({ movement }) {
                     displayFormats: {
                         hour: 'HH:mm',
                         day: 'MMM dd',
-                    }
+                    },
+                    tooltipFormat: 'MMM dd, HH:mm'
                 },
-                display: false,
+                display: true,
+                grid: {
+                    display: true,
+                    color: 'rgba(0, 0, 0, 0.05)',
+                    drawBorder: false
+                },
+                ticks: {
+                    color: '#6B7280',
+                    font: {
+                        size: 10
+                    },
+                    maxTicksLimit: 4
+                },
+                border: {
+                    display: false
+                }
             },
             y: {
                 min: 0,
                 max: 1,
-                display: false,
+                display: true,
+                grid: {
+                    display: true,
+                    color: 'rgba(0, 0, 0, 0.05)',
+                    drawBorder: false
+                },
+                ticks: {
+                    color: '#6B7280',
+                    font: {
+                        size: 10
+                    },
+                    callback: function(value) {
+                        return (value * 100).toFixed(0) + '%'
+                    },
+                    maxTicksLimit: 5
+                },
+                border: {
+                    display: false
+                }
             },
         },
         interaction: {
@@ -127,8 +191,15 @@ export default function MovementCard({ movement }) {
         },
         elements: {
             point: {
-                radius: 0,
-                hoverRadius: 4,
+                radius: priceHistory.length <= 2 ? 4 : 0,
+                hoverRadius: 6,
+                backgroundColor: movement.change_percentage >= 0 ? 'rgb(34, 197, 94)' : 'rgb(239, 68, 68)',
+                borderColor: 'white',
+                borderWidth: 2
+            },
+            line: {
+                borderWidth: 3,
+                tension: 0.2
             }
         }
     }
@@ -139,10 +210,29 @@ export default function MovementCard({ movement }) {
                 label: 'Probability',
                 data: priceHistory,
                 borderColor: movement.change_percentage >= 0 ? 'rgb(34, 197, 94)' : 'rgb(239, 68, 68)',
-                backgroundColor: movement.change_percentage >= 0 ? 'rgba(34, 197, 94, 0.1)' : 'rgba(239, 68, 68, 0.1)',
-                borderWidth: 2,
+                backgroundColor: function(context) {
+                    const chart = context.chart;
+                    const {ctx, chartArea} = chart;
+                    if (!chartArea) {
+                        return null;
+                    }
+                    
+                    const gradient = ctx.createLinearGradient(0, chartArea.bottom, 0, chartArea.top);
+                    if (movement.change_percentage >= 0) {
+                        gradient.addColorStop(0, 'rgba(34, 197, 94, 0.1)');
+                        gradient.addColorStop(1, 'rgba(34, 197, 94, 0.3)');
+                    } else {
+                        gradient.addColorStop(0, 'rgba(239, 68, 68, 0.1)');
+                        gradient.addColorStop(1, 'rgba(239, 68, 68, 0.3)');
+                    }
+                    return gradient;
+                },
+                borderWidth: 3,
                 fill: true,
-                tension: 0.1,
+                tension: 0.2,
+                pointBackgroundColor: movement.change_percentage >= 0 ? 'rgb(34, 197, 94)' : 'rgb(239, 68, 68)',
+                pointBorderColor: 'white',
+                pointBorderWidth: 2,
             },
         ],
     }
@@ -194,16 +284,45 @@ export default function MovementCard({ movement }) {
                     {showChart && (
                         <div className="mt-4">
                             {isLoadingChart ? (
-                                <div className="h-32 flex items-center justify-center">
-                                    <div className="text-gray-500">Loading chart...</div>
+                                <div className="h-40 bg-gray-50 rounded-lg flex items-center justify-center">
+                                    <div className="text-center">
+                                        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-2"></div>
+                                        <div className="text-gray-500 text-sm">Loading chart...</div>
+                                    </div>
                                 </div>
                             ) : priceHistory.length > 0 ? (
-                                <div className="h-32">
-                                    <Line options={chartOptions} data={chartData} />
+                                <div className="space-y-2">
+                                    <div className="flex items-center justify-between text-xs text-gray-600">
+                                        <span>Price History ({priceHistory.length} points)</span>
+                                        <span className="text-xs">
+                                            {priceHistory.length > 1 && (
+                                                <>
+                                                    {formatProbability(Math.min(...priceHistory.map(p => p.y)))} - {formatProbability(Math.max(...priceHistory.map(p => p.y)))}
+                                                </>
+                                            )}
+                                        </span>
+                                    </div>
+                                    <div className="h-40 bg-gray-50 rounded-lg p-2">
+                                        {priceHistory.length < 2 ? (
+                                            <div className="h-full flex items-center justify-center text-gray-500 text-sm">
+                                                <div className="text-center">
+                                                    <div className="mb-2">Limited price data</div>
+                                                    <div className="text-xs">Current: {formatProbability(priceHistory[0]?.y || 0)}</div>
+                                                </div>
+                                            </div>
+                                        ) : (
+                                            <Line options={chartOptions} data={chartData} />
+                                        )}
+                                    </div>
                                 </div>
                             ) : (
-                                <div className="h-32 flex items-center justify-center text-gray-500">
-                                    No price history available
+                                <div className="h-40 bg-gray-50 rounded-lg flex items-center justify-center">
+                                    <div className="text-center">
+                                        <svg className="w-8 h-8 text-gray-300 mx-auto mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+                                        </svg>
+                                        <div className="text-gray-500 text-sm">No price history available</div>
+                                    </div>
                                 </div>
                             )}
                         </div>
