@@ -12,7 +12,7 @@ export default function Dashboard({ movements, stats, threshold }) {
     const [currentThreshold, setCurrentThreshold] = useState(threshold)
     const [autoRefresh, setAutoRefresh] = useState(true)
     const [isRefreshing, setIsRefreshing] = useState(false)
-    const [viewMode, setViewMode] = useState('list') // 'list', 'grid', 'chart'
+    const [viewMode, setViewMode] = useState('list') // 'list', 'grid'
     const [searchTerm, setSearchTerm] = useState('')
 
     // Auto-refresh every 30 seconds
@@ -192,16 +192,6 @@ export default function Dashboard({ movements, stats, threshold }) {
                                 >
                                     Grid
                                 </button>
-                                <button
-                                    onClick={() => setViewMode('chart')}
-                                    className={`px-3 py-1 text-sm font-medium rounded-md transition-colors ${
-                                        viewMode === 'chart'
-                                            ? 'bg-blue-600 text-white'
-                                            : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
-                                    }`}
-                                >
-                                    Chart
-                                </button>
                             </div>
                             
                             <button
@@ -252,14 +242,6 @@ export default function Dashboard({ movements, stats, threshold }) {
                             
                             {viewMode === 'grid' && (
                                 <MarketChangesGrid movements={filteredMovements} />
-                            )}
-                            
-                            {viewMode === 'chart' && (
-                                <div className="bg-white rounded-lg shadow border p-6">
-                                    <div className="h-96 w-full">
-                                        <MovementsChart movements={filteredMovements} />
-                                    </div>
-                                </div>
                             )}
                         </>
                     )}
