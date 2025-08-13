@@ -153,6 +153,11 @@ ayanadevs_prophit/
    ```bash
    php artisan serve
    ```
+   
+9. **Run the schedule worker**
+   ```bash
+   php artisan schedule:work
+   ```
 
 ## 🔧 Configuration
 
