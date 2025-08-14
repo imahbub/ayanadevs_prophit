@@ -70,7 +70,7 @@ export default function Dashboard({ movements, stats, threshold }) {
         }
     }
 
-    const thresholdOptions = [5, 10, 15, 20, 25]
+    const thresholdOptions = [1, 5, 10, 15, 20, 25]
 
     // Filter movements based on search term
     const filteredMovements = searchTerm.trim() 
@@ -161,7 +161,7 @@ export default function Dashboard({ movements, stats, threshold }) {
                 </div>
 
                 {/* Stats Grid */}
-                <StatsGrid stats={stats} />
+                <StatsGrid stats={stats} threshold={currentThreshold} />
 
                 {/* Recent Movements - Now at the top */}
                 <div className="space-y-6">

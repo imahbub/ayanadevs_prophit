@@ -1,6 +1,6 @@
 import React from 'react'
 
-export default function StatsGrid({ stats }) {
+export default function StatsGrid({ stats, threshold = 10 }) {
     const statItems = [
         {
             label: 'Active Markets',
@@ -17,7 +17,7 @@ export default function StatsGrid({ stats }) {
         {
             label: 'Significant Movements',
             value: stats.significant_movements_today || 0,
-            description: '10%+ changes in 24h',
+            description: `${threshold}%+ changes in 24h`,
             color: 'red'
         }
     ]
