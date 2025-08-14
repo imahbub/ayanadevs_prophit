@@ -14,6 +14,8 @@ export default function Dashboard({ movements, stats, threshold }) {
     const [isRefreshing, setIsRefreshing] = useState(false)
     const [viewMode, setViewMode] = useState('list') // 'list', 'grid'
     const [searchTerm, setSearchTerm] = useState('')
+    const [sortBy, setSortBy] = useState('time') // 'time', 'percentage'
+    const [sortOrder, setSortOrder] = useState('desc') // 'asc', 'desc'
 
     // Auto-refresh every 30 seconds
     useEffect(() => {
@@ -77,6 +79,30 @@ export default function Dashboard({ movements, stats, threshold }) {
             (movement.market.category && movement.market.category.toLowerCase().includes(searchTerm.toLowerCase()))
           )
         : movements
+
+    // Sort movements based on current sort settings
+    const sortedMovements = [...filteredMovements].sort((a, b) => {
+        let comparison = 0
+        
+        if (sortBy === 'percentage') {
+            comparison = Math.abs(a.change_percentage) - Math.abs(b.change_percentage)
+        } else if (sortBy === 'time') {
+            comparison = new Date(a.movement_detected_at) - new Date(b.movement_detected_at)
+        }
+        
+        return sortOrder === 'desc' ? -comparison : comparison
+    })
+
+    const handleSortChange = (newSortBy) => {
+        if (sortBy === newSortBy) {
+            // Toggle sort order if same field
+            setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc')
+        } else {
+            // Set new sort field with default desc order
+            setSortBy(newSortBy)
+            setSortOrder('desc')
+        }
+    }
 
     return (
         <Layout title="Market Movements" lastSync={stats.last_sync}>
@@ -170,6 +196,45 @@ export default function Dashboard({ movements, stats, threshold }) {
                                 )}
                             </div>
 
+                            {/* Sort Options */}
+                            <div className="flex items-center space-x-2">
+                                <label htmlFor="sort" className="text-sm font-medium text-gray-700">
+                                    Sort by:
+                                </label>
+                                <div className="flex items-center space-x-1">
+                                    <button
+                                        onClick={() => handleSortChange('time')}
+                                        className={`px-3 py-1 text-sm font-medium rounded-md transition-colors ${
+                                            sortBy === 'time'
+                                                ? 'bg-blue-600 text-white'
+                                                : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+                                        }`}
+                                    >
+                                        Time
+                                        {sortBy === 'time' && (
+                                            <span className="ml-1">
+                                                {sortOrder === 'desc' ? '↓' : '↑'}
+                                            </span>
+                                        )}
+                                    </button>
+                                    <button
+                                        onClick={() => handleSortChange('percentage')}
+                                        className={`px-3 py-1 text-sm font-medium rounded-md transition-colors ${
+                                            sortBy === 'percentage'
+                                                ? 'bg-blue-600 text-white'
+                                                : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+                                        }`}
+                                    >
+                                        Movement %
+                                        {sortBy === 'percentage' && (
+                                            <span className="ml-1">
+                                                {sortOrder === 'desc' ? '↓' : '↑'}
+                                            </span>
+                                        )}
+                                    </button>
+                                </div>
+                            </div>
+
                             {/* View Mode Toggle */}
                             <div className="flex items-center space-x-2">
                                 <button
@@ -211,7 +276,7 @@ export default function Dashboard({ movements, stats, threshold }) {
                     {/* Search Results Info */}
                     {searchTerm && (
                         <div className="text-sm text-gray-600 bg-blue-50 border border-blue-200 rounded-md p-3">
-                            Showing {filteredMovements.length} of {movements.length} movements matching "{searchTerm}"
+                            Showing {sortedMovements.length} of {movements.length} movements matching "{searchTerm}"
                         </div>
                     )}
 
@@ -234,33 +299,33 @@ export default function Dashboard({ movements, stats, threshold }) {
                         <>
                             {viewMode === 'list' && (
                                 <div className="space-y-4">
-                                    {filteredMovements.map((movement) => (
+                                    {sortedMovements.map((movement) => (
                                         <MovementCard key={movement.id} movement={movement} />
                                     ))}
                                 </div>
                             )}
                             
                             {viewMode === 'grid' && (
-                                <MarketChangesGrid movements={filteredMovements} />
+                                <MarketChangesGrid movements={sortedMovements} />
                             )}
                         </>
                     )}
                 </div>
 
                 {/* Movements Overview Chart */}
-                {filteredMovements.length > 0 && (
+                {sortedMovements.length > 0 && (
                     <div className="space-y-4">
                         <h2 className="text-xl font-semibold text-gray-900">
                             Movements Overview
                         </h2>
-                        <MovementsChart movements={filteredMovements} />
+                        <MovementsChart movements={sortedMovements} />
                     </div>
                 )}
 
                 {/* Top Movements Summary */}
                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                     <div className="lg:col-span-2">
-                        <MarketChangesSummary movements={filteredMovements} />
+                        <MarketChangesSummary movements={sortedMovements} />
                     </div>
                 </div>
 
