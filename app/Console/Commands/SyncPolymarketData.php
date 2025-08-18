@@ -12,7 +12,7 @@ class SyncPolymarketData extends Command
      *
      * @var string
      */
-    protected $signature = 'polymarket:sync {--threshold=10 : Minimum percentage change to detect as significant movement}';
+    protected $signature = 'polymarket:sync {--threshold=0.5 : Minimum percentage change to detect as significant movement}';
 
     /**
      * The console command description.
