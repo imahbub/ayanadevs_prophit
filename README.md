@@ -101,6 +101,7 @@ ayanadevs_prophit/
 ## 🚀 Installation
 
 ### Prerequisites
+- Linux or MacOS (Windows needs too many things for setup which I can't bother with)
 - PHP 8.2+
 - Node.js 18+
 - Composer
