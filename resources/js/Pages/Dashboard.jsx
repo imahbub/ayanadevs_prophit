@@ -70,7 +70,7 @@ export default function Dashboard({ movements, stats, threshold }) {
         }
     }
 
-    const thresholdOptions = [1, 5, 10, 15, 20, 25]
+    const thresholdOptions = [0.5, 1, 5, 10, 15, 20, 25]
 
     // Filter movements based on search term
     const filteredMovements = searchTerm.trim() 

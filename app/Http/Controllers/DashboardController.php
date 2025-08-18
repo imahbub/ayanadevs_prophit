@@ -15,7 +15,7 @@ class DashboardController extends Controller
      */
     public function index(Request $request): Response
     {
-        $threshold = $request->get('threshold', 1);
+        $threshold = $request->get('threshold', 0.5);
         
         // Get recent significant movements
         $movements = MarketMovement::with('market')

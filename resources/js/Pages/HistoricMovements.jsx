@@ -73,6 +73,7 @@ export default function HistoricMovements({ movements, stats, timeframe, minThre
                                 onChange={(e) => handleThresholdChange(e.target.value)}
                                 className="border border-gray-300 rounded-md px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                             >
+                                <option value="0.5">0.5%+ movements</option>
                                 <option value="1">1%+ movements</option>
                                 <option value="5">5%+ movements</option>
                                 <option value="10">10%+ movements</option>

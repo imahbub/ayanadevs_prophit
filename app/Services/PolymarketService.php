@@ -294,7 +294,7 @@ class PolymarketService
     /**
      * Detect significant market movements
      */
-    public function detectSignificantMovements(Market $market, float $threshold = 1.0): void
+    public function detectSignificantMovements(Market $market, float $threshold = 0.5): void
     {
         // Get price history from last 24 hours
         $recentHistory = $market->priceHistory()
